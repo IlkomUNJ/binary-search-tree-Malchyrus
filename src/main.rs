@@ -33,7 +33,6 @@ fn test_bst(){
     println!("Tree structure after insertion saved to {}", insert_tree_path);
 
     BstNode::tree_delete(&mut rootlink.clone(), 7);
-    BstNode::tree_delete(&mut rootlink.clone(), 6);
     BstNode::tree_delete(&mut rootlink.clone(), 20);
     BstNode::tree_delete(&mut rootlink.clone(), 100);
     let delete_tree_path = "bst_delete.dot";
