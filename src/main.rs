@@ -34,7 +34,7 @@ fn test_bst(){
 
     BstNode::tree_delete(&mut rootlink.clone(), 7);
     BstNode::tree_delete(&mut rootlink.clone(), 6);
-    BstNode::tree_delete(&mut rootlink.clone(), 18);
+    BstNode::tree_delete(&mut rootlink.clone(), 20);
     BstNode::tree_delete(&mut rootlink.clone(), 100);
     let delete_tree_path = "bst_delete.dot";
     generate_dotfile_bst(&rootlink, delete_tree_path);
