@@ -11,13 +11,40 @@ use crate::tool::generate_dotfile_bst;
 fn main() {
     //turn on to test the old code
     // test_binary_tree();
-    test_binary_search_tree();
+    test_bst();
+}
+
+fn test_bst(){
+
+    let rootlink: BstNodeLink = BstNode::new_bst_nodelink(15);
+    BstNode::tree_insert(&mut rootlink.clone(), 6);
+    BstNode::tree_insert(&mut rootlink.clone(), 18);
+    BstNode::tree_insert(&mut rootlink.clone(), 17);
+    BstNode::tree_insert(&mut rootlink.clone(), 20);
+    BstNode::tree_insert(&mut rootlink.clone(), 3);
+    BstNode::tree_insert(&mut rootlink.clone(), 7);
+    BstNode::tree_insert(&mut rootlink.clone(), 2);
+    BstNode::tree_insert(&mut rootlink.clone(), 4);
+    BstNode::tree_insert(&mut rootlink.clone(), 13);
+    BstNode::tree_insert(&mut rootlink.clone(), 9);
+
+    let insert_tree_path = "bst_insert.dot";
+    generate_dotfile_bst(&rootlink, insert_tree_path);
+    println!("Tree structure after insertion saved to {}", insert_tree_path);
+
+    BstNode::tree_delete(&mut rootlink.clone(), 7);
+    BstNode::tree_delete(&mut rootlink.clone(), 6);
+    BstNode::tree_delete(&mut rootlink.clone(), 18);
+    BstNode::tree_delete(&mut rootlink.clone(), 100);
+    let delete_tree_path = "bst_delete.dot";
+    generate_dotfile_bst(&rootlink, delete_tree_path);
+    println!("Tree structure after deletion saved to {}", delete_tree_path);
 }
 
 fn test_binary_search_tree(){
     let rootlink: BstNodeLink = BstNode::new_bst_nodelink(15);
-    rootlink.borrow_mut().add_left_child(&rootlink, 6);
-    rootlink.borrow_mut().add_right_child(&rootlink, 18);
+    rootlink.borrow_mut().add_left_child(&mut rootlink.clone(), 6);
+    rootlink.borrow_mut().add_right_child(&mut rootlink.clone(), 18);
 
     //add right subtree
     let right_subtree: &Option<BstNodeLink> = &rootlink.borrow().right;
@@ -112,6 +139,7 @@ fn test_binary_search_tree(){
             println!("node with key of {} does not exist, failed to get successor", key)
         }
     }
+    println!("Insert");
 }
 
 #[allow(dead_code)]
@@ -120,7 +148,7 @@ fn test_binary_tree() {
     let rootlink: NodeLink = Node::new_nodelink(5);
 
     //add a new left node value
-    rootlink.borrow_mut().add_left_child(&rootlink, 3);
+    rootlink.borrow_mut().add_left_child(&rootlink, 6);
     //add a new right node value
     rootlink.borrow_mut().add_right_child(&rootlink, 7);
 
@@ -204,4 +232,6 @@ fn test_binary_tree() {
     //print the tree again
     main_tree_path = "prime_t4.dot";
     generate_dotfile(&rootlink, main_tree_path);
+
+    
 }

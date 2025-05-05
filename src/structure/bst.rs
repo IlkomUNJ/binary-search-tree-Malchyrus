@@ -219,4 +219,182 @@ impl BstNode {
             Some(x) => Some(x.upgrade().unwrap()),
         }
     }
-}
+    pub fn tree_insert_link(root: &BstNodeLink, new_node: &BstNodeLink) {
+        // Special case: root has no key (dummy root, likely from tree creation)
+        if root.borrow().key.is_none() {
+            let mut root_mut = root.borrow_mut();
+            *root_mut = new_node.borrow().clone();
+            return;
+        }
+    
+        let mut x = Some(root.clone());
+        let mut y = None;
+    
+        while let Some(current) = x.clone() {
+            let current_key = current.borrow().key;
+            let new_key = new_node.borrow().key;
+    
+            match (new_key, current_key) {
+                (Some(nk), Some(ck)) => {
+                    y = x.clone();
+                    if nk < ck {
+                        x = current.borrow().left.clone();
+                    } else {
+                        x = current.borrow().right.clone();
+                    }
+                }
+                _ => {
+                    panic!("Cannot insert: one of the node keys is None");
+                }
+            }
+        }
+    
+        if let Some(ref parent) = y {
+            new_node.borrow_mut().parent = Some(Rc::downgrade(parent));
+            let new_key = new_node.borrow().key.unwrap();
+            let parent_key = parent.borrow().key.unwrap();
+    
+            if new_key < parent_key {
+                parent.borrow_mut().left = Some(new_node.clone());
+            } else {
+                parent.borrow_mut().right = Some(new_node.clone());
+            }
+        } else {
+            panic!("Insertion failed: parent node is None");
+        }
+    }
+    
+
+    pub fn transplant(u: &BstNodeLink, v: Option<BstNodeLink>) {
+        if let Some(parent_weak) = &u.borrow().parent {
+            if let Some(parent) = parent_weak.upgrade() {
+                if parent.borrow().left.as_ref().map(|x| Rc::ptr_eq(x, u)).unwrap_or(false) {
+                    parent.borrow_mut().left = v.clone();
+                } else {
+                    parent.borrow_mut().right = v.clone();
+                }
+                if let Some(ref v_node) = v {
+                    v_node.borrow_mut().parent = Some(Rc::downgrade(&parent));
+                }
+            }
+        }
+    }
+
+    pub fn tree_delete_link(root: &mut BstNodeLink, z: &BstNodeLink) {
+        let is_root = Rc::ptr_eq(root, z);
+    
+        let z_left = z.borrow().left.clone();
+        let z_right = z.borrow().right.clone();
+        let z_right_clone = z_right.clone();
+    
+        if z_left.is_none() {
+            if is_root {
+                if let Some(new_root) = z_right {
+                    let new_val = new_root.borrow().clone();
+                    *root.borrow_mut() = new_val;
+                } else {
+                    root.borrow_mut().key = None;
+                    root.borrow_mut().left = None;
+                    root.borrow_mut().right = None;
+                    root.borrow_mut().parent = None;
+                }
+            } else {
+                BstNode::transplant(z, z_right);
+            }
+        } else if z_right.is_none() {
+            if is_root {
+                if let Some(new_root) = z_left {
+                    let new_val = new_root.borrow().clone();
+                    *root.borrow_mut() = new_val;
+                } else {
+                    root.borrow_mut().key = None;
+                    root.borrow_mut().left = None;
+                    root.borrow_mut().right = None;
+                    root.borrow_mut().parent = None;
+                }
+            } else {
+                BstNode::transplant(z, z_left);
+            }
+        } else {
+            let right_child = z_right.unwrap();
+            let successor = right_child.borrow().minimum();
+    
+            let successor_is_direct_child = Rc::ptr_eq(&successor, &right_child);
+            let successor_right = successor.borrow().right.clone();
+            let z_left_clone = z_left.clone();
+    
+            if !successor_is_direct_child {
+                BstNode::transplant(&successor, successor_right.clone());
+    
+                if let Some(ref r) = z_right_clone {
+                    successor.borrow_mut().right = Some(r.clone());
+                    r.borrow_mut().parent = Some(Rc::downgrade(&successor));
+                }
+            }
+    
+            if is_root {
+                let succ_clone = successor.borrow().clone();
+                *root.borrow_mut() = succ_clone;
+    
+                if let Some(ref l) = z_left_clone {
+                    root.borrow_mut().left = Some(l.clone());
+                    l.borrow_mut().parent = Some(Rc::downgrade(root));
+                }
+    
+                if let Some(ref r) = z_right_clone {
+                    if !Rc::ptr_eq(r, &successor) {
+                        root.borrow_mut().right = Some(r.clone());
+                        r.borrow_mut().parent = Some(Rc::downgrade(root));
+                    }
+                }
+            } else {
+                BstNode::transplant(z, Some(successor.clone()));
+    
+                if let Some(ref l) = z_left_clone {
+                    successor.borrow_mut().left = Some(l.clone());
+                    l.borrow_mut().parent = Some(Rc::downgrade(&successor));
+                }
+            }
+        }
+    }
+    
+    
+    
+    pub fn tree_search_link(node: &BstNodeLink, value: &i32) -> Option<BstNodeLink> {
+        let mut current = node.clone();
+    
+        loop {
+            let next = {
+                let current_borrow = current.borrow();
+    
+                match current_borrow.key {
+                    Some(key) if *value == key => return Some(current.clone()),
+                    Some(key) if *value < key => current_borrow.left.clone(),
+                    Some(_) => current_borrow.right.clone(),
+                    None => return None,
+                }
+            };
+    
+            match next {
+                Some(next_node) => current = next_node,
+                None => return None,
+            }
+        }
+    }
+    
+    
+    pub fn tree_insert(root: &mut BstNodeLink, key: i32) {
+        let new_node = BstNode::new_bst_nodelink(key);
+        BstNode::tree_insert_link(root, &new_node);
+    }
+    
+    pub fn tree_delete(root: &mut BstNodeLink, key: i32) {
+        let node_to_delete = Self::tree_search_link(root, &key);
+        if let Some(node) = node_to_delete {
+            BstNode::tree_delete_link(root, &node);
+        } else {
+            println!("Key {} not found, cannot delete", key);
+        }
+    }
+
+} 
